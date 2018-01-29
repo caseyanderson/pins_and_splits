@@ -5,8 +5,8 @@ code by Casey Anderson
 
 
 density range = 0.01..1.0
-duration range = 5.0..25.0
-
+trayle duration range = 1.0..10.0
+bitpanic duration range = 5.0..25.0
 
 */
 
@@ -66,7 +66,6 @@ change upon receiving a switch message)
 
 SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	var env, sig;
-
 
 	env = EnvGen.kr( Env.linen( 0.01, dur, 0.01 ), trig, doneAction: 2 );
 	sig = SinOsc.ar( freq, 0.0, amp ) * env;
