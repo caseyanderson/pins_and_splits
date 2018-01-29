@@ -233,7 +233,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 
 // density
 
-~densSlider = Slider.new(~window, Rect(350, 10, 50, 200))
+~densSlider = Slider.new(~window, Rect(355, 10, 50, 200))
 .action_({ |slider|
 	var val = [0.01, 1.0, \lin, 0.01].asSpec.map(slider.value);
 	//set bus
@@ -241,11 +241,11 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	~densNumber.value_(val); // show slider value in number box
 });
 
-~densNumber = NumberBox(~window, Rect(350, 215, 50, 25));
+~densNumber = NumberBox(~window, Rect(355, 215, 50, 25));
 ~densNumber.align = \center;
 ~densNumber.value = 0.0;
 
-~densLabel = StaticText(~window, Rect( 350, 245, 50, 25));
+~densLabel = StaticText(~window, Rect( 355, 245, 50, 25));
 ~densLabel.align = \center;
 ~densLabel.string = "dens";
 ~densLabel.background = Color.white;
