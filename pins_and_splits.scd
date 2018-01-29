@@ -34,6 +34,8 @@ s.boot;
 
 ~density = Bus.control(s, 1).set(0.25);
 ~duration = Bus.control(s, 1).set(5.0);
+~backAmp = Bus.control(s, 1).set(0.0);
+~foreAmp = Bus.control(s, 1).set(0.0);
 
 )
 
@@ -67,7 +69,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 
 
 	env = EnvGen.kr( Env.linen( 0.01, dur, 0.01 ), trig, doneAction: 2 );
-	sig = LFTri.ar( freq, 0.0, amp ) * env;
+	sig = SinOsc.ar( freq, 0.0, amp ) * env;
 	Out.ar( out, Pan2.ar( sig ));
 
 }).add;
@@ -84,7 +86,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 
 	// foreground goes here
 
-	Synth(\foreground, [\amp, 0.9, \dur, dur, \trig, 1, \freq, { rrand(200.0, 500.0).asFloat }.value ]);
+	Synth(\foreground, [\amp, ~foreAmp.asMap, \dur, dur, \trig, 1, \freq, { rrand(200.0, 500.0).asFloat }.value ]);
 
 	SystemClock.sched(dur, {
 
@@ -102,10 +104,12 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 // GUI
 
 (
-~window = Window.new("pins&splits", Rect(0,0,405,280))
+~window = Window.new("pins&splits", Rect(0,0,470,280))
     .onClose_({
-	"closing".postln;
+	"CLOSING".postln;
 	OSCdef.freeAll;
+	~back.free;
+
 });
 
 
@@ -122,7 +126,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 			"START THE SWITCHER".postln;
 			OSCdef(\whatever, ~switcher, \switch );
 			"RUN BACKGROUND".postln;
-			~back = Synth( \background, [ \trig, 1, \amp, 0.0 ]);
+			~back = Synth( \background, [ \trig, 1, \amp, ~backAmp.asMap ]);
         },
         {
 			"STOPPED BACKGROUND".postln;
@@ -134,23 +138,49 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
     );
 });
 
-~number = NumberBox(~window, Rect(10, 10 + 60, 50, 50));
-~number.align = \center;
-~number.value = 0.0;
-
-~slider = Slider.new(~window, Rect(65, 10, 50, 200))
+~backAmpSlider = Slider.new(~window, Rect(65, 10, 50, 200))
 .action_({ |slider|
 	var val = slider.value;
-	~back.set(\amp, val);
-	~number.value_(val); // show slider value in number box
+
+	~backAmp.set(val);
+	~backAmpVal.value_(val); // show slider value in number box
 });
+
+
+~backAmpVal = NumberBox(~window, Rect(65, 215, 50, 25));
+~backAmpVal.align = \center;
+~backAmpVal.value = 0.0;
+
+~backAmpLabel = StaticText(~window, Rect( 65, 245, 50, 25));
+~backAmpLabel.align = \center;
+~backAmpLabel.string = "back";
+~backAmpLabel.background = Color.white;
+
+
+~foreAmpSlider = Slider.new(~window, Rect(120, 10, 50, 200))
+.action_({ |slider|
+	var val = slider.value;
+
+	~foreAmp.set(val);
+	~foreAmpVal.value_(val); // show slider value in number box
+});
+
+
+~foreAmpVal = NumberBox(~window, Rect(120, 215, 50, 25));
+~foreAmpVal.align = \center;
+~foreAmpVal.value = 0.0;
+
+~foreAmpLabel = StaticText(~window, Rect( 120, 245, 50, 25));
+~foreAmpLabel.align = \center;
+~foreAmpLabel.string = "fore";
+~foreAmpLabel.background = Color.white;
 
 
 // network control
 
 //select person to send to
 
-~sendto = Knob.new(~window, Rect(125, 10, 50, 50))
+~sendto = Knob.new(~window, Rect(185, 10, 50, 50))
 .action_({ |knobval|
 	// replace maxval
 	var val = [0, 1, \lin, 1].asSpec.map(knobval.value);
@@ -160,8 +190,8 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 
 // display sendto's hostname
 
-~whom = Button(~window, Rect( 185, 10, 100, 50))
-        .states_([
+~whom = Button(~window, Rect( 245, 10, 100, 50))
+.states_([
 	[~listofnames[0], Color.white, Color.grey],
 	[~listofnames[1], Color.white, Color.grey]
 ]);
@@ -169,7 +199,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 
 // send the message!
 
-~sendNow = Button(~window, Rect( 125, 65, 160, 50))
+~sendNow = Button(~window, Rect( 185, 65, 160, 50))
 .states_([
 	["SEND", Color.white, Color.grey],
 	["", Color.red, Color.red]
@@ -201,7 +231,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 
 // density
 
-~densSlider = Slider.new(~window, Rect(290, 10, 50, 200))
+~densSlider = Slider.new(~window, Rect(350, 10, 50, 200))
 .action_({ |slider|
 	var val = [0.01, 1.0, \lin, 0.01].asSpec.map(slider.value);
 	//set bus
@@ -209,11 +239,11 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	~densNumber.value_(val); // show slider value in number box
 });
 
-~densNumber = NumberBox(~window, Rect(290, 215, 50, 25));
+~densNumber = NumberBox(~window, Rect(350, 215, 50, 25));
 ~densNumber.align = \center;
 ~densNumber.value = 0.0;
 
-~densLabel = StaticText(~window, Rect( 290, 245, 50, 25));
+~densLabel = StaticText(~window, Rect( 350, 245, 50, 25));
 ~densLabel.align = \center;
 ~densLabel.string = "dens";
 ~densLabel.background = Color.white;
@@ -221,7 +251,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 
 // duration
 
-~durSlider = Slider.new(~window, Rect(345, 10, 50, 200))
+~durSlider = Slider.new(~window, Rect(410, 10, 50, 200))
 .action_({ |slider|
 	var val = [5.0, 25.0, \lin, 0.01].asSpec.map(slider.value);
 	//set bus
@@ -229,11 +259,11 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	~durNumber.value_(val); // show slider value in number box
 });
 
-~durNumber = NumberBox(~window, Rect(345, 215, 50, 25));
+~durNumber = NumberBox(~window, Rect(410, 215, 50, 25));
 ~durNumber.align = \center;
 ~durNumber.value = 0.0;
 
-~durLabel = StaticText(~window, Rect( 345, 245, 50, 25));
+~durLabel = StaticText(~window, Rect( 410, 245, 50, 25));
 ~durLabel.align = \center;
 ~durLabel.string = "dur";
 ~durLabel.background = Color.white;
