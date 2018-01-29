@@ -102,7 +102,12 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 // GUI
 
 (
-~window = Window.new("pins&splits", Rect(0,0,405,280));
+~window = Window.new("pins&splits", Rect(0,0,405,280))
+    .onClose_({
+	"closing".postln;
+	OSCdef.freeAll;
+});
+
 
 // background sound controls
 ~button = Button(~window, Rect( 10, 10, 50, 50))
@@ -236,13 +241,3 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 ~window.front;
 
 )
-
-
-///////////////
-
-//send to myself
-//
-x.to( \mdp, [ \switch, 0.9, 10.0 ] );
-
-
-
