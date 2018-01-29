@@ -4,7 +4,7 @@ pins and splits, Mark Trayle, 2014
 code by Casey Anderson
 
 
-density range = 0.0..1.0
+density range = 0.01..1.0
 duration range = 5.0..25.0
 
 
@@ -20,7 +20,7 @@ s.boot;
 ~ips = Dictionary.newFrom(
 	List[
 		\partner, "10.4.18.101",
-		\me, "10.4.25.80"
+		\me, "10.0.1.5"
 	]
 );
 
@@ -37,7 +37,7 @@ s.boot;
 
 )
 
-///////// SYNTH /////////
+///////// SYNTHS /////////
 
 (
 
@@ -71,13 +71,38 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	Out.ar( out, Pan2.ar( sig ));
 
 }).add;
+
+
+// switcher function
+
+~switcher = { | msg, tm, addr |
+
+	var dens = msg[1], dur = msg[2], rPos, bufNumber;
+	postln( "pins and splits "++msg );
+
+	~back.set(\trig, 0 ); // turns background off
+
+	// foreground goes here
+
+	Synth(\foreground, [\amp, 0.9, \dur, dur, \trig, 1, \freq, { rrand(200.0, 500.0).asFloat }.value ]);
+
+	SystemClock.sched(dur, {
+
+		// turn the background synth back on after dur
+
+		~back.set( \trig, 1 );
+
+	});
+};
+
+
 )
 
 
 // GUI
 
 (
-~window = Window.new("pins&splits", Rect(0,0,405,220));
+~window = Window.new("pins&splits", Rect(0,0,405,280));
 
 // background sound controls
 ~button = Button(~window, Rect( 10, 10, 50, 50))
@@ -89,13 +114,17 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 .action_({ arg butt;
     if( butt.value == 1,
         {
-			"background running".postln;
-			~back = Synth( \background, [ \trig, 1, \amp, 0.7 ]);
+			"START THE SWITCHER".postln;
+			OSCdef(\whatever, ~switcher, \switch );
+			"RUN BACKGROUND".postln;
+			~back = Synth( \background, [ \trig, 1, \amp, 0.0 ]);
         },
         {
-			"background stopped".postln;
+			"STOPPED BACKGROUND".postln;
 			~back.set(\trig, 0);
 			~back.free;
+			"KILLED SWITCHER".postln;
+			OSCdef(\whatever).free;
         }
     );
 });
@@ -144,29 +173,50 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	var num = val.value;
 	if( num == 1, {
 		// send here
-		var host = ~whom.string;
+		var host = ~whom.string, ip;
 		("//send to "++host++"!!").postln;
-		~duration.get({ |value|
-			var dur = value, ip;
+		~duration.get({ |durValue|
+			var dens, dur = durValue, ip;
 
 			ip = ~ips.at(host);
 
-			NetAddr(ip, 57120).sendMsg(\switch, 0.05, dur);
+			~density.get({ |densValue|
 
-			SystemClock.sched( 0.25, {
-			{ ~sendNow.value_(0) }.defer; // this resets sendNow
-		});
+				dens = densValue;
+				NetAddr(ip, 57120).sendMsg(\switch, dens, dur);
+				SystemClock.sched( 0.25, {
+					{ ~sendNow.value_(0) }.defer; // this resets sendNow
+				});
+			});
 		});
 	});
 
 });
 
-// set the duration
-~durNumber = NumberBox(~window, Rect(345, 10 , 50, 50));
-~durNumber.align = \center;
-~durNumber.value = 0.0;
 
-~durSlider = Slider.new(~window, Rect(290, 10, 50, 200))
+// density
+
+~densSlider = Slider.new(~window, Rect(290, 10, 50, 200))
+.action_({ |slider|
+	var val = [0.01, 1.0, \lin, 0.01].asSpec.map(slider.value);
+	//set bus
+	~density.set(val);
+	~densNumber.value_(val); // show slider value in number box
+});
+
+~densNumber = NumberBox(~window, Rect(290, 215, 50, 25));
+~densNumber.align = \center;
+~densNumber.value = 0.0;
+
+~densLabel = StaticText(~window, Rect( 290, 245, 50, 25));
+~densLabel.align = \center;
+~densLabel.string = "dens";
+~densLabel.background = Color.white;
+
+
+// duration
+
+~durSlider = Slider.new(~window, Rect(345, 10, 50, 200))
 .action_({ |slider|
 	var val = [5.0, 25.0, \lin, 0.01].asSpec.map(slider.value);
 	//set bus
@@ -174,38 +224,16 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	~durNumber.value_(val); // show slider value in number box
 });
 
+~durNumber = NumberBox(~window, Rect(345, 215, 50, 25));
+~durNumber.align = \center;
+~durNumber.value = 0.0;
+
+~durLabel = StaticText(~window, Rect( 345, 245, 50, 25));
+~durLabel.align = \center;
+~durLabel.string = "dur";
+~durLabel.background = Color.white;
 
 ~window.front;
-
-)
-
-
-// OSC //
-
-(
-~switcher = { | msg, tm, addr |
-
-	var dens = msg[1], dur = msg[2], rPos, bufNumber;
-	postln( "pins and splits "++msg );
-
-	~back.set(\trig, 0 ); // turns background off
-
-	// foreground goes here
-
-	Synth(\foreground, [\amp, 0.9, \dur, dur, \trig, 1, \freq, { rrand(200.0, 500.0).asFloat }.value ]);
-
-	SystemClock.sched(dur, {
-
-		// turn the background synth back on after dur
-
-		~back.set( \trig, 1 );
-
-	});
-};
-
-// respond to the switch statement by running the switcher function
-
-OSCdef(\whatever, ~switcher, \switch );
 
 )
 
