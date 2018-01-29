@@ -182,7 +182,10 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 ~sendto = Knob.new(~window, Rect(185, 10, 50, 50))
 .action_({ |knobval|
 	// replace maxval
-	var val = [0, 1, \lin, 1].asSpec.map(knobval.value);
+
+	var maxval, val;
+	maxval = (~listofnames.size) - 1;
+	val = [0, maxval, \lin, 1].asSpec.map(knobval.value);
 	{ ~whom.value_(val) }.defer;
 });
 
