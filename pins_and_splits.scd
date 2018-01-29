@@ -13,22 +13,41 @@ bitpanic duration range = 5.0..25.0
 s.boot;
 
 (
-// setup database of IPs
 
-~listofnames = List.new(2);
+// setup database of IPs
 
 ~ips = Dictionary.newFrom(
 	List[
-		\partner, "10.4.18.101",
-		\me, "10.0.1.5"
+		\fake, "127.0.0.1",
+		\othermill, "10.4.18.72",
+		\me, "10.0.26.23"
 	]
 );
 
+
 ~names = ~ips.keys;
+~listofnames = List.new(~names.size);
 
 ~names.do({|key|
 	~listofnames.add(key);
 });
+
+
+// makes the state array
+
+~makeStates ={
+	var len = ~listofnames.size;
+	~states = List.new(len);
+	~listofnames.do({|key|
+		var name, thestate;
+
+		name = key;
+		thestate = [name.asString, Color.white, Color.grey ];
+		~states.add(thestate);
+});
+};
+
+
 
 // control bus
 
@@ -103,6 +122,10 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 // GUI
 
 (
+
+~makeStates.value;
+~states = ~states.asArray;
+
 ~window = Window.new("pins&splits", Rect(0,0,470,280))
     .onClose_({
 	"CLOSING".postln;
@@ -184,20 +207,18 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	// replace maxval
 
 	var maxval, val;
-	maxval = (~listofnames.size) - 1;
+	maxval = ~listofnames.size;
 	val = [0, maxval, \lin, 1].asSpec.map(knobval.value);
 	{ ~whom.value_(val) }.defer;
 });
 
 
-// display sendto's hostname
+// display sendto's hostname (num states in loop)
 
 ~whom = Button(~window, Rect( 245, 10, 100, 50))
-.states_([
-	[~listofnames[0], Color.white, Color.grey],
-	[~listofnames[1], Color.white, Color.grey]
-]);
-
+.states_(
+	~states.asArray;
+);
 
 // send the message!
 
