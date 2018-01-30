@@ -13,101 +13,57 @@ bitpanic duration range = 5.0..25.0
 s.boot;
 
 (
-// setup database of IPs
 
-~listofnames = List.new(2);
+~deployed = "10.0.1.7";
+
+// setup database of IPs
 
 ~ips = Dictionary.newFrom(
 	List[
-		\partner, "10.4.18.72",
-		\me, "10.4.26.23"
+		\pi, "10.0.1.7",
+		\me, "10.0.1.5"
 	]
 );
 
+
 ~names = ~ips.keys;
+~listofnames = List.new(~names.size);
 
 ~names.do({|key|
 	~listofnames.add(key);
 });
 
-// control bus
 
-~density = Bus.control(s, 1).set(0.25);
-~duration = Bus.control(s, 1).set(5.0);
-~backAmp = Bus.control(s, 1).set(0.0);
-~foreAmp = Bus.control(s, 1).set(0.0);
+// makes the state array
 
-)
+~makeStates ={
+	var len = ~listofnames.size;
+	~states = List.new(len);
+	~listofnames.do({|key|
+		var name, thestate;
 
-///////// SYNTHS /////////
-
-(
-
-/*background sound
-(this is too boring for use in this piece
-but enough to demonstrate the structure)
-*/
-
-SynthDef( \background, {| amp = 0.0, out = 0, trig = 0 |
-	var env, sig;
-
-	env = EnvGen.kr( Env.asr( 0.1, 0.9, 0.1 ), trig,  doneAction: 0 );
-	sig = PinkNoise.ar( amp ) * env;
-	Out.ar( out, Pan2.ar( sig ) );
-
-}).add;
-
-
-/*foreground sound
-(also too boring for use in this piece
-but different enough to be a noticeable
-change upon receiving a switch message)
-*/
-
-SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
-	var env, sig;
-
-	env = EnvGen.kr( Env.linen( 0.01, dur, 0.01 ), trig, doneAction: 2 );
-	sig = SinOsc.ar( freq, 0.0, amp ) * env;
-	Out.ar( out, Pan2.ar( sig ));
-
-}).add;
-
-
-// switcher function
-
-~switcher = { | msg, tm, addr |
-
-	var dens = msg[1], dur = msg[2], rPos, bufNumber;
-	postln( "pins and splits "++msg );
-
-	~back.set(\trig, 0 ); // turns background off
-
-	// foreground goes here
-
-	Synth(\foreground, [\amp, ~foreAmp.asMap, \dur, dur, \trig, 1, \freq, { rrand(200.0, 500.0).asFloat }.value ]);
-
-	SystemClock.sched(dur, {
-
-		// turn the background synth back on after dur
-
-		~back.set( \trig, 1 );
-
-	});
+		name = key;
+		thestate = [name.asString, Color.white, Color.grey ];
+		~states.add(thestate);
+});
 };
 
-
 )
 
+///////// OSC /////////
 
 // GUI
 
 (
+
+~makeStates.value;
+~states = ~states.asArray;
+
 ~window = Window.new("pins&splits", Rect(0,0,470,280))
     .onClose_({
 	"CLOSING".postln;
 	OSCdef.freeAll;
-	~back.free;
+	NetAddr(~deployed, 57120).sendMsg('/deployed', '/free');
 
 });
 
@@ -122,17 +78,12 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 .action_({ arg butt;
     if( butt.value == 1,
         {
-			"START THE SWITCHER".postln;
-			OSCdef(\whatever, ~switcher, \switch );
-			"RUN BACKGROUND".postln;
-			~back = Synth( \background, [ \trig, 1, \amp, ~backAmp.asMap ]);
-        },
+			"START THE SWITCHER, RUN BACKGROUND".postln;
+			NetAddr(~deployed, 57120).sendMsg('/deployed', '/run');
+		},
         {
-			"STOPPED BACKGROUND".postln;
-			~back.set(\trig, 0);
-			~back.free;
-			"KILLED SWITCHER".postln;
-			OSCdef(\whatever).free;
+			"STOPPED BACKGROUND, KILLED SWITCHER".postln;
+			NetAddr(~deployed, 57120).sendMsg('/deployed', '/free');
         }
     );
 });
@@ -141,7 +92,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 .action_({ |slider|
 	var val = slider.value;
 
-	~backAmp.set(val);
+	NetAddr(~deployed, 57120).sendMsg('/deployed', '/back', '/vol', val);
 	~backAmpVal.value_(val); // show slider value in number box
 });
 
@@ -160,7 +111,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 .action_({ |slider|
 	var val = slider.value;
 
-	~foreAmp.set(val);
+	NetAddr(~deployed, 57120).sendMsg('/deployed', '/fore', '/vol', val);
 	~foreAmpVal.value_(val); // show slider value in number box
 });
 
@@ -177,6 +128,8 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 
 // network control
 
+// network control
+
 //select person to send to
 
 ~sendto = Knob.new(~window, Rect(185, 10, 50, 50))
@@ -184,20 +137,18 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	// replace maxval
 
 	var maxval, val;
-	maxval = (~listofnames.size) - 1;
+	maxval = ~listofnames.size;
 	val = [0, maxval, \lin, 1].asSpec.map(knobval.value);
 	{ ~whom.value_(val) }.defer;
 });
 
 
-// display sendto's hostname
+// display sendto's hostname (num states in loop)
 
 ~whom = Button(~window, Rect( 245, 10, 100, 50))
-.states_([
-	[~listofnames[0], Color.white, Color.grey],
-	[~listofnames[1], Color.white, Color.grey]
-]);
-
+.states_(
+	~states.asArray;
+);
 
 // send the message!
 
@@ -238,6 +189,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	var val = [0.01, 1.0, \lin, 0.01].asSpec.map(slider.value);
 	//set bus
 	~density.set(val);
+
 	~densNumber.value_(val); // show slider value in number box
 });
 
