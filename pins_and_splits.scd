@@ -15,20 +15,25 @@ s.boot;
 (
 // setup database of IPs
 
-~listofnames = List.new(2);
-
 ~ips = Dictionary.newFrom(
 	List[
-		\partner, "10.4.18.72",
-		\me, "10.4.26.23"
+		"partner", "10.4.18.72",
+		"me", "10.4.25.141"
 	]
 );
 
 ~names = ~ips.keys;
 
-~names.do({|key|
-	~listofnames.add(key);
-});
+~listofnames = ~names.as(List);
+
+~states = ~listofnames.collect { |name|
+[name, Color.white, Color.grey]
+};
+
+~addresses = ~listofnames.collect { |name|
+NetAddr(~ips[name], 57120)
+};
+
 
 // control bus
 
@@ -103,6 +108,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 // GUI
 
 (
+
 ~window = Window.new("pins&splits", Rect(0,0,470,280))
     .onClose_({
 	"CLOSING".postln;
@@ -193,10 +199,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 // display sendto's hostname
 
 ~whom = Button(~window, Rect( 245, 10, 100, 50))
-.states_([
-	[~listofnames[0], Color.white, Color.grey],
-	[~listofnames[1], Color.white, Color.grey]
-]);
+.states_(~states);
 
 
 // send the message!
@@ -210,24 +213,21 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	var num = val.value;
 	if( num == 1, {
 		// send here
-		var host = ~whom.string, ip;
-		("//send to "++host++"!!").postln;
+		// Changes are here:
+		var addr = ~addresses[~whom.value];
+		("//send to " ++ ~listofnames[~whom.value] ++ "!!").postln;
 		~duration.get({ |durValue|
 			var dens, dur = durValue, ip;
-
-			ip = ~ips.at(host);
-
 			~density.get({ |densValue|
-
 				dens = densValue;
-				NetAddr(ip, 57120).sendMsg(\switch, dens, dur);
+				// and here
+				addr.sendMsg(\switch, dens, dur);
 				SystemClock.sched( 0.25, {
 					{ ~sendNow.value_(0) }.defer; // this resets sendNow
 				});
 			});
 		});
 	});
-
 });
 
 
