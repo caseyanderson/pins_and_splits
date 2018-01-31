@@ -1,7 +1,7 @@
 ## ////// PINS & SPLITS!!!!
 Mark Trayle, 2014
 
-In pins&splits players alternate between a single 'background' sound and a set of one or more 'foreground' sounds. A player's foreground sound can be triggered by another player at any time, causing the background sound to stop. After a relatively short period of time, say, in the 1 - 10 second range, the foreground sound stops, and the background sound starts again.
+In *pins&splits* players alternate between a single 'background' sound and a set of one or more 'foreground' sounds. A player's foreground sound can be triggered by another player at any time, causing the background sound to stop. After a relatively short period of time, say, in the 1 - 10 second range, the foreground sound stops, and the background sound starts again.
 
 Players have no control over their own foreground/background switching, that's done by other players in the group.
 
