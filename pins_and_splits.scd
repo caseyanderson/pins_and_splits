@@ -219,7 +219,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 				dens = densValue;
 				addr.sendMsg(\switch, dens, dur);
 				SystemClock.sched( 0.25, {
-					{ ~sendNow.value_(0) }.defer; // this resets sendNow
+					{ ~sendNow.value_(0) }.defer; // resets sendNow
 				});
 			});
 		});
