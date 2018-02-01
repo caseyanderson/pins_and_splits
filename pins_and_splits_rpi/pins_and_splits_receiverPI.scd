@@ -69,7 +69,6 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 ~switcher = { | msg, tm, addr |
 	var dens = msg[1], dur = msg[2], rPos, bufNumber;
 	postln( "pins and splits "++msg );
-
 	~back.set(\trig, 0 ); // turns background off
 
 	// foreground goes here
@@ -92,7 +91,7 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 
 (
 OSCdef(\listener, { | msg |
-			msg.postln;
+			// msg.postln;
 			switch( msg[1],
 				'/backvol', {
 					"background vol"++msg[2].postln;
@@ -120,6 +119,4 @@ OSCdef(\listener, { | msg |
 }, \control); // OSCdef listens on control
 
 );
-
 });
-

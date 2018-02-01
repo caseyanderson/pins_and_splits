@@ -74,8 +74,6 @@ NetAddr(~ips[name], 57120)
 			"STOPPED BACKGROUND".postln;
 			~addresses[0].sendMsg(\control, '/stop');
 			~addresses[0].sendMsg(\control, '/free');
-			"dont forget to kill the switcher".postln;
-//			OSCdef(\whatever).free;
         }
     );
 });
