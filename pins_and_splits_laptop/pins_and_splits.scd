@@ -18,7 +18,7 @@ s.boot;
 ~ips = Dictionary.newFrom(
 	List[
 		"partner", "10.4.18.72",
-		"me", "10.4.25.141"
+		"me", "10.4.24.175"
 	]
 );
 
