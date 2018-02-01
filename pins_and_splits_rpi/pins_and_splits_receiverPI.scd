@@ -110,15 +110,14 @@ OSCdef(\listener, { | msg |
 				'/run', {
 					"back RUN".postln;
 					~back = Synth( \background, [ \trig, 1, \amp, ~backAmp.asMap ]);
+					"make switch listener".postln;
+					OSCdef(\whatever, ~switcher, \switch );
 				},
 				'/stop', {
 					"back STOPPED".postln;
 					~back.set(\trig, 0);
 			});
 }, \control); // OSCdef listens on control
-
-"make switch listener".postln;
-OSCdef(\whatever, ~switcher, \switch );
 
 );
 
