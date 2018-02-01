@@ -187,8 +187,6 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 
 ~sendto = Knob.new(~window, Rect(185, 10, 50, 50))
 .action_({ |knobval|
-	// replace maxval
-
 	var maxval, val;
 	maxval = (~listofnames.size) - 1;
 	val = [0, maxval, \lin, 1].asSpec.map(knobval.value);
@@ -213,14 +211,12 @@ SynthDef( \foreground, { | amp = 0.0, dur = 4, freq = 300, out = 0, trig = 0 |
 	var num = val.value;
 	if( num == 1, {
 		// send here
-		// Changes are here:
 		var addr = ~addresses[~whom.value];
 		("//send to " ++ ~listofnames[~whom.value] ++ "!!").postln;
 		~duration.get({ |durValue|
 			var dens, dur = durValue, ip;
 			~density.get({ |densValue|
 				dens = densValue;
-				// and here
 				addr.sendMsg(\switch, dens, dur);
 				SystemClock.sched( 0.25, {
 					{ ~sendNow.value_(0) }.defer; // this resets sendNow
