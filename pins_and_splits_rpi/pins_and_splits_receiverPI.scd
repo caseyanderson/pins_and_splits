@@ -94,16 +94,16 @@ OSCdef(\listener, { | msg |
 			// msg.postln;
 			switch( msg[1],
 				'/backvol', {
-					"background vol"++msg[2].postln;
+					("background VOL "++msg[2]).postln;
 					~backAmp.set(msg[2]);
 				},
 				'/free', {
-					"back free".postln;
+					"back FREE".postln;
 					~back.set(\trig, 0);
 					~back.free;
 				},
 				'/forevol', {
-					"fore VOL "++msg[2].postln;
+					("fore VOL "++msg[2]).postln;
 					~foreAmp.set(msg[2]);
 				},
 				'/run', {
