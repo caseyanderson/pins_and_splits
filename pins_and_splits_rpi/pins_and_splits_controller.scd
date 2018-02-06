@@ -19,15 +19,7 @@ s.boot;
 
 ~ips = Dictionary.newFrom(
 	List[
-		"matthew", "10.4.26.133",
-		"miranda", "10.4.18.32",
-		"julia", "10.4.25.74",
-		"karina", "10.4.18.22",
-		"mina", "10.4.26.166",
-		"tong", "10.4.26.173",
-		"alex", "10.4.19.180",
-		"jom", "10.4.24.122",
-		"david", "10.4.18.1",
+		"david", "127.0.0.1",
 		"mypi", "10.4.26.4"
 	]
 );
@@ -44,7 +36,6 @@ s.boot;
 ~addresses = ~listofnames.collect { |name|
 	NetAddr(~ips[name], 57120)
 };
-
 
 // just my pi
 ~controller = NetAddr(~ips["mypi"], 57120);
