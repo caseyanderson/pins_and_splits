@@ -15,14 +15,26 @@ bitpanic duration range = 5.0..25.0
 s.boot;
 
 (
+
 // setup database of IPs
 
 ~ips = Dictionary.newFrom(
 	List[
+		"madeup", "127.0.0.1",
 		"david", "127.0.0.1",
 		"mypi", "10.4.26.4"
 	]
 );
+
+// just mypi
+
+~controller = NetAddr(~ips["mypi"], 57120);
+
+// remove mypi from list of ips
+
+~ips.removeAt("mypi");
+
+// setup message sending to everyone else
 
 ~names = ~ips.keys;
 
@@ -32,20 +44,17 @@ s.boot;
 [name, Color.white, Color.grey]
 };
 
-// this has everyone else and mypi for now
 ~addresses = ~listofnames.collect { |name|
 	NetAddr(~ips[name], 57120)
 };
 
-// just my pi
-~controller = NetAddr(~ips["mypi"], 57120);
-
-// control bus
+// control bus for controller
 
 ~density = Bus.control(s, 1).set(0.25);
 ~duration = Bus.control(s, 1).set(5.0);
 
 )
+
 
 // GUI
 
@@ -206,4 +215,17 @@ s.boot;
 
 ~window.front;
 
+)
+
+
+///////// test switch on mypi
+
+(
+~duration.get({ |durValue|
+			var dens, dur = durValue, ip;
+			~density.get({ |densValue|
+				dens = densValue;
+				~controller.sendMsg(\switch, dens, dur);
+	});
+});
 )
